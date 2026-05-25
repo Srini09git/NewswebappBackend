@@ -1,10 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form, File, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
-from auth import create_access_token, get_password_hash, verify_password, get_current_super_admin
+from typing import Optional
+import os
+import shutil
+from bson import ObjectId
+from auth import create_access_token, get_password_hash, verify_password, get_current_super_admin, get_current_user
 from config import settings
 from database import get_db
-from models import Token, AdminCreate, TokenData
+from models import Token, AdminCreate, TokenData, UserProfileOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -72,3 +76,108 @@ async def get_users():
     for user in users:
         user["_id"] = str(user["_id"])
     return users
+
+@router.delete("/users/{user_id}", dependencies=[Depends(get_current_super_admin)])
+async def delete_user(user_id: str, current_user: TokenData = Depends(get_current_super_admin)):
+    db = get_db()
+    if not ObjectId.is_valid(user_id):
+        raise HTTPException(status_code=400, detail="Invalid user ID format")
+        
+    user = await db["users"].find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if user.get("role") == "super_admin":
+        raise HTTPException(status_code=403, detail="Cannot delete super admin")
+        
+    result = await db["users"].delete_one({"_id": ObjectId(user_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    return {"message": "Admin user deleted successfully"}
+
+@router.get("/profile", response_model=UserProfileOut)
+async def get_profile(current_user: TokenData = Depends(get_current_user)):
+    db = get_db()
+    filters = []
+    if current_user.email:
+        filters.append({"email": current_user.email})
+    if current_user.username:
+        filters.append({"username": current_user.username})
+        
+    if not filters:
+        raise HTTPException(status_code=400, detail="Invalid token data")
+        
+    user = await db["users"].find_one({"$or": filters})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    return UserProfileOut(
+        id=str(user["_id"]),
+        username=user.get("username"),
+        email=user.get("email"),
+        role=user.get("role"),
+        owner_name=user.get("owner_name"),
+        channel_name=user.get("channel_name"),
+        profile_pic=user.get("profile_pic")
+    )
+
+@router.put("/profile", response_model=UserProfileOut)
+async def update_profile(
+    owner_name: Optional[str] = Form(None),
+    channel_name: Optional[str] = Form(None),
+    email: Optional[str] = Form(None),
+    profile_pic: Optional[UploadFile] = File(None),
+    current_user: TokenData = Depends(get_current_user)
+):
+    db = get_db()
+    filters = []
+    if current_user.email:
+        filters.append({"email": current_user.email})
+    if current_user.username:
+        filters.append({"username": current_user.username})
+        
+    if not filters:
+        raise HTTPException(status_code=400, detail="Invalid token data")
+        
+    user = await db["users"].find_one({"$or": filters})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    update_data = {}
+    if owner_name is not None:
+        update_data["owner_name"] = owner_name
+    if channel_name is not None:
+        update_data["channel_name"] = channel_name
+        
+    if email is not None:
+        if email != user.get("email"):
+            existing = await db["users"].find_one({"email": email})
+            if existing:
+                raise HTTPException(status_code=400, detail="Email is already in use by another user")
+            update_data["email"] = email
+
+    if profile_pic:
+        UPLOAD_DIR = "uploads"
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        file_path = os.path.join(UPLOAD_DIR, profile_pic.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(profile_pic.file, buffer)
+        update_data["profile_pic"] = f"/uploads/{profile_pic.filename}"
+        
+    if update_data:
+        await db["users"].update_one(
+            {"_id": user["_id"]},
+            {"$set": update_data}
+        )
+        user = await db["users"].find_one({"_id": user["_id"]})
+        
+    return UserProfileOut(
+        id=str(user["_id"]),
+        username=user.get("username"),
+        email=user.get("email"),
+        role=user.get("role"),
+        owner_name=user.get("owner_name"),
+        channel_name=user.get("channel_name"),
+        profile_pic=user.get("profile_pic")
+    )

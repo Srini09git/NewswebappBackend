@@ -113,21 +113,24 @@ export default function UserSettingsPanel({ isOpen, onClose, onSave }: UserSetti
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                   Category Focus
                 </label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                >
-                  <option value="All">All Categories</option>
-                  <option value="politics">Politics</option>
-                  <option value="business">Business</option>
-                  <option value="technology">Technology</option>
-                  <option value="sports">Sports</option>
-                  <option value="entertainment">Entertainment</option>
-                  <option value="world/international">World/International</option>
-                  <option value="health/wellness">Health/Wellness</option>
-                  <option value="environment">Environment</option>
-                </select>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    "All", "Politics", "Business", "Technology", 
+                    "Sports", "Entertainment", "World", "Health", "Environment"
+                  ].map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setCategory(cat)}
+                      className={`py-2 px-1 rounded-xl border-2 text-xs font-medium transition-all ${
+                        category.toLowerCase() === cat.toLowerCase()
+                          ? "border-primary bg-primary/5 text-primary shadow-sm" 
+                          : "border-gray-100 dark:border-gray-800 text-gray-500 hover:border-gray-200 dark:hover:border-gray-700"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Language Settings */}
@@ -135,37 +138,54 @@ export default function UserSettingsPanel({ isOpen, onClose, onSave }: UserSetti
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                   Primary Language
                 </label>
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                >
-                  <option value="English">English</option>
-                  <option value="Tamil">Tamil</option>
-                  <option value="Hindi">Hindi</option>
-                </select>
+                <div className="grid grid-cols-3 gap-2">
+                  {["English", "Tamil", "Hindi", "Bengali", "Marathi", "Telugu", "Kannada", "Gujarati", "Urdu"].map(lang => (
+                    <button
+                      key={lang}
+                      onClick={() => setLanguage(lang)}
+                      className={`py-2 px-1 rounded-xl border-2 text-xs font-medium transition-all ${
+                        language === lang 
+                          ? "border-primary bg-primary/5 text-primary shadow-sm" 
+                          : "border-gray-100 dark:border-gray-800 text-gray-500 hover:border-gray-200 dark:hover:border-gray-700"
+                      }`}
+                    >
+                      {lang}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-3">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                   Secondary Language (Optional)
                 </label>
-                <select
-                  value={secondaryLanguage}
-                  onChange={(e) => setSecondaryLanguage(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                >
-                  <option value="None">None</option>
-                  <option value="English" disabled={language === "English"}>English</option>
-                  <option value="Tamil" disabled={language === "Tamil"}>Tamil</option>
-                  <option value="Hindi" disabled={language === "Hindi"}>Hindi</option>
-                  <option value="Bengali" disabled={language === "Bengali"}>Bengali</option>
-                  <option value="Marathi" disabled={language === "Marathi"}>Marathi</option>
-                  <option value="Telugu" disabled={language === "Telugu"}>Telugu</option>
-                  <option value="Kannada" disabled={language === "Kannada"}>Kannada</option>
-                  <option value="Gujarati" disabled={language === "Gujarati"}>Gujarati</option>
-                  <option value="Urdu" disabled={language === "Urdu"}>Urdu</option>
-                </select>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => setSecondaryLanguage("None")}
+                    className={`py-2 px-1 rounded-xl border-2 text-xs font-medium transition-all ${
+                      secondaryLanguage === "None" 
+                        ? "border-primary bg-primary/5 text-primary shadow-sm" 
+                        : "border-gray-100 dark:border-gray-800 text-gray-500 hover:border-gray-200 dark:hover:border-gray-700"
+                    }`}
+                  >
+                    None
+                  </button>
+                  {["English", "Tamil", "Hindi", "Bengali", "Marathi", "Telugu", "Kannada", "Gujarati", "Urdu"]
+                    .filter(l => l !== language)
+                    .map(lang => (
+                      <button
+                        key={lang}
+                        onClick={() => setSecondaryLanguage(lang)}
+                        className={`py-2 px-1 rounded-xl border-2 text-xs font-medium transition-all ${
+                          secondaryLanguage === lang 
+                            ? "border-primary bg-primary/5 text-primary shadow-sm" 
+                            : "border-gray-100 dark:border-gray-800 text-gray-500 hover:border-gray-200 dark:hover:border-gray-700"
+                        }`}
+                      >
+                        {lang}
+                      </button>
+                    ))}
+                </div>
               </div>
 
               {/* Location Settings */}

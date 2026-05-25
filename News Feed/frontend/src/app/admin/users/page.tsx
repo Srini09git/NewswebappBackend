@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { Loader2, UserPlus, Mail, Shield, ShieldCheck } from "lucide-react";
+import { Loader2, UserPlus, Mail, Shield, ShieldCheck, Trash2 } from "lucide-react";
+import { jwtDecode } from "jwt-decode";
 
 export default function ManageUsers() {
   const [users, setUsers] = useState<any[]>([]);
@@ -15,10 +16,19 @@ export default function ManageUsers() {
   const [newPassword, setNewPassword] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState("");
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
 
   const fetchUsers = async () => {
     try {
       const token = Cookies.get("admin_token");
+      if (token) {
+        try {
+          const decoded: any = jwtDecode(token);
+          setCurrentUserEmail(decoded.email || decoded.sub || null);
+        } catch (e) {
+          console.error("Invalid token", e);
+        }
+      }
       const res = await axios.get("http://127.0.0.1:8000/auth/users", {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -33,6 +43,19 @@ export default function ManageUsers() {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!window.confirm("Are you sure you want to delete this admin user?")) return;
+    try {
+      const token = Cookies.get("admin_token");
+      await axios.delete(`http://127.0.0.1:8000/auth/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchUsers();
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Failed to delete user");
+    }
+  };
 
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,6 +117,7 @@ export default function ManageUsers() {
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email/Username</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -125,11 +149,22 @@ export default function ManageUsers() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     Active
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    {user.email !== currentUserEmail && user.username !== currentUserEmail && user.role !== 'super_admin' && (
+                      <button
+                        onClick={() => handleDeleteUser(user._id)}
+                        className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 p-2 rounded-lg transition-colors"
+                        title="Delete Admin"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     No users found.
                   </td>
                 </tr>

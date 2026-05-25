@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Cookies from "js-cookie";
-import { LogOut, LayoutDashboard, PlusCircle, Users } from "lucide-react";
+import { LogOut, LayoutDashboard, PlusCircle, Users, User } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
 import Link from "next/link";
 
@@ -77,6 +77,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   Manage Admins
                 </Link>
               )}
+              <Link 
+                href="/admin/profile" 
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${pathname === '/admin/profile' ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+              >
+                <User className="w-4 h-4 inline mr-2" />
+                Profile
+              </Link>
             </div>
           </div>
           

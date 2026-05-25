@@ -30,7 +30,21 @@ export default function AdminLogin() {
       Cookies.set("admin_token", response.data.access_token, { expires: 1 });
       router.push("/admin/dashboard");
     } catch (err: any) {
-      setError(err.response?.data?.detail || "An error occurred during login");
+      console.error("Login error:", err);
+      let errorMessage = "An error occurred during login";
+      if (err.response?.data?.detail) {
+        const detail = err.response.data.detail;
+        if (typeof detail === "string") {
+          errorMessage = detail;
+        } else if (Array.isArray(detail)) {
+          errorMessage = detail.map((d: any) => d.msg).join(", ");
+        } else {
+          errorMessage = JSON.stringify(detail);
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
