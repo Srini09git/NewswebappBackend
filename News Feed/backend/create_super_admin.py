@@ -3,8 +3,8 @@ from database import db
 from auth import get_password_hash
 
 async def create_super_user():
-    email = "superadmin@example.com"
-    hashed_password = get_password_hash('superadmin')
+    email = "superadmin"
+    hashed_password = get_password_hash('test')
     result = await db["users"].update_one(
         {"email": email}, 
         {"$set": {"password": hashed_password, "role": "super_admin"}}, 
